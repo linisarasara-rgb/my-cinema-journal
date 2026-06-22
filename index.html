@@ -128,7 +128,7 @@ async function scegli(id){
  selected=await r.json(); titolo.value=selected.title; results.innerHTML='';
  preview.innerHTML=`<div class='movie'><img class='poster' src='https://image.tmdb.org/t/p/w342${selected.poster_path}'><div><h3>${selected.title}</h3><p>${selected.genres.map(g=>g.name).join(', ')}</p><p>${selected.production_countries.map(c=>c.name).join(', ')}</p></div></div>`;
 }
-function salvaFilm(){
+async function salvaFilm(){
  if(!selected){alert('Select a film from the suggestions');return;}
  const film={tmdb:selected,voto:voto.value,data:data.value,compagnia:compagnia.value,mood:mood.value.split(',').map(x=>x.trim()).filter(Boolean),recensione:recensione.value,preferito:false};
  db.unshift(film);
