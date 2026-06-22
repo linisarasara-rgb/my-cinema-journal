@@ -47,9 +47,11 @@ border-top:1px solid var(--border);
 @media(max-width:900px){body{display:block}.sidebar{position:relative;width:100%;min-height:auto}.main{margin:0}}
 </style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const supabase = window.supabase.createClient(
- 'https://wqzhizfersqguhlndpvn.supabase.co',
- 'sb_publishable_z6o7aomJGo5iiNjnq6a-7g_0Q0qQd9k'
+const { createClient } = window.supabase;
+
+const supabase = createClient(
+  'https://wqzhizfersqguhlndpvn.supabase.co',
+  'sb_publishable_z6o7aomJGo5iiNjnq6a-7g_0Q0qQd9k'
 );
 </script></head><body>
 <div class="sidebar">
