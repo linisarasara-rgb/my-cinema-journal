@@ -170,6 +170,7 @@ function aggiornaMood(){
 
 
 let currentEditIndex=null;
+
 function editFilm(i){
  currentEditIndex=i;
  let f=db[i];
@@ -179,45 +180,145 @@ function editFilm(i){
  document.getElementById('editMood').value=(f.mood||[]).join(', ');
  document.getElementById('editModal').style.display='block';
 }
-function closeEditModal(){document.getElementById('editModal').style.display='none';}
+
+function closeEditModal(){
+ document.getElementById('editModal').style.display='none';
+}
+
 function saveEdit(){
  let f=db[currentEditIndex];
  f.recensione=document.getElementById('editReview').value;
  f.voto=document.getElementById('editRating').value;
  f.compagnia=document.getElementById('editCompagnia').value;
- f.mood=document.getElementById('editMood').value.split(',').map(x=>x.trim()).filter(Boolean);
+ f.mood=document.getElementById('editMood').value
+   .split(',')
+   .map(x=>x.trim())
+   .filter(Boolean);
+
  closeEditModal();
  save();
 }
 
-
-function fav(i){db[i].preferito=!db[i].preferito;save()} function delFilm(i){db.splice(i,1);save()}
-function save(){localStorage.setItem('mcj_finale',JSON.stringify(db)); aggiornaMood(); render()}
-function render(){
- let mf=moodFiltro.value,p=paeseFiltro.value.toLowerCase(),fo=favFiltro.value==='1';
- let vis=db.filter(f=>(!mf||f.mood.includes(mf))&&(!p||f.tmdb.production_countries.map(c=>c.name).join(',').toLowerCase().includes(p))&&(!fo||f.preferito));
- if(!vis.length){lista.innerHTML="<div class='empty'><h3>No diary entries yet.</h3><p>Start by adding the first film that inspired you.</p></div>";}
- else{lista.innerHTML=''; vis.forEach((f,i)=>{let m=f.tmdb; lista.innerHTML+=`<div class='movie'><img class='poster' src='https://image.tmdb.org/t/p/w342${m.poster_path}'><div><div style='font-size:28px;cursor:pointer' onclick='fav(${i})'>${f.preferito?'❤️':'🤍'}</div><h2>${m.title}</h2><p>${m.genres.map(g=>g.name).join(', ')} • ${m.production_countries.map(c=>c.name).join(', ')}</p><p><b>Date watched:</b> ${f.data ? new Date(f.data).toLocaleDateString('en-GB') : '—'}</p><p><b>Seen with:</b> ${f.compagnia||'—'}</p><p><b>Rating:</b> ${f.voto}/10</p>${f.mood.map(x=>`<span class='tag'>${x}</span>`).join('')}<p>${f.recensione}</p><details class='entry-menu'>
-<summary>⋯</summary>
-<div class='menu-box'>
-<div onclick='editFilm(${i})'>✏️ Edit Entry</div>
-<div onclick='delFilm(${i})'>🗑 Delete Entry</div>
-</div>
-</details></div></div>`})}
-loadCloud();
- let c={}; db.forEach(f=>f.tmdb.production_countries.forEach(p=>c[p.name]=(c[p.name]||0)+1)); topPaese.textContent=Object.keys(c).sort((a,b)=>c[b]-c[a])[0]||'-';
+function fav(i){
+ db[i].preferito=!db[i].preferito;
+ save();
 }
-aggiornaMood(); render();
+
+function delFilm(i){
+ db.splice(i,1);
+ save();
+}
+
+function save(){
+ localStorage.setItem('mcj_finale',JSON.stringify(db));
+ aggiornaMood();
+ render();
+}
+
+function render(){
+ let mf=moodFiltro.value,
+     p=paeseFiltro.value.toLowerCase(),
+     fo=favFiltro.value==='1';
+
+ let vis=db.filter(f=>
+   (!mf||f.mood.includes(mf)) &&
+   (!p||f.tmdb.production_countries.map(c=>c.name).join(',').toLowerCase().includes(p)) &&
+   (!fo||f.preferito)
+ );
+
+ if(!vis.length){
+   lista.innerHTML="<div class='empty'><h3>No diary entries yet.</h3><p>Start by adding the first film that inspired you.</p></div>";
+ }
+ else{
+   lista.innerHTML='';
+
+   vis.forEach((f,i)=>{
+     let m=f.tmdb;
+
+     lista.innerHTML+=`
+     <div class='movie'>
+       <img class='poster' src='https://image.tmdb.org/t/p/w342${m.poster_path}'>
+
+       <div>
+         <div style='font-size:28px;cursor:pointer' onclick='fav(${i})'>
+           ${f.preferito?'❤️':'🤍'}
+         </div>
+
+         <h2>${m.title}</h2>
+
+         <p>
+           ${m.genres.map(g=>g.name).join(', ')}
+           •
+           ${m.production_countries.map(c=>c.name).join(', ')}
+         </p>
+
+         <p><b>Date watched:</b>
+           ${f.data ? new Date(f.data).toLocaleDateString('en-GB') : '—'}
+         </p>
+
+         <p><b>Seen with:</b> ${f.compagnia||'—'}</p>
+
+         <p><b>Rating:</b> ${f.voto}/10</p>
+
+         ${f.mood.map(x=>`<span class='tag'>${x}</span>`).join('')}
+
+         <p>${f.recensione}</p>
+
+         <details class='entry-menu'>
+           <summary>⋯</summary>
+
+           <div class='menu-box'>
+             <div onclick='editFilm(${i})'>✏️ Edit Entry</div>
+             <div onclick='delFilm(${i})'>🗑 Delete Entry</div>
+           </div>
+
+         </details>
+
+       </div>
+     </div>`;
+   });
+ }
+
+ let c={};
+
+ db.forEach(f=>
+   f.tmdb.production_countries.forEach(p=>
+     c[p.name]=(c[p.name]||0)+1
+   )
+ );
+
+ topPaese.textContent=
+   Object.keys(c).sort((a,b)=>c[b]-c[a])[0]||'-';
+}
+
+loadCloud();
 </script>
+
 <div id="editModal" class="modal">
   <div class="modal-content">
     <h2>Edit Entry</h2>
+
     <input id="editRating" placeholder="Rating /10">
-    <input id="editCompagnia" placeholder="Who did you go with?">
-    <input id="editMood" placeholder="Mood tags">
-    <textarea id="editReview" style="min-height:260px"></textarea>
-    <button onclick="saveEdit()">Save Changes</button>
-    <button onclick="closeEditModal()">Cancel</button>
+
+    <input id="editCompagnia"
+           placeholder="Who did you go with?">
+
+    <input id="editMood"
+           placeholder="Mood tags">
+
+    <textarea id="editReview"
+              style="min-height:260px"></textarea>
+
+    <button onclick="saveEdit()">
+      Save Changes
+    </button>
+
+    <button onclick="closeEditModal()">
+      Cancel
+    </button>
+
   </div>
 </div>
-</body></html>
+
+</body>
+</html>
