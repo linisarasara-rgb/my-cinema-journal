@@ -1,0 +1,183 @@
+<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Cinema Journal</title>
+<style>
+:root{--olive:#6b6a4d;--cream:#f4f0e8;--card:#fbf8f2;--text:#2e2b25;--border:#ddd4c7}
+*{box-sizing:border-box} body{margin:0;background:var(--cream);font-family:Georgia,serif;color:var(--text);display:flex}
+.sidebar{width:260px;background:var(--olive);color:#f8f5ef;min-height:100vh;padding:32px;position:fixed}
+.main{margin-left:260px;padding:36px;width:100%}
+.hero{background:transparent;border:none;border-radius:0;padding:20px 0 30px;margin-bottom:10px;text-align:center}.card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:28px;margin-bottom:24px}
+.hero h1{margin:0;font-size:3rem;font-weight:300}.hero p{font-style:italic}
+.menu a{display:block;color:#f8f5ef;text-decoration:none;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.12)}
+.search-wrapper{max-width:520px;margin:0 auto 24px}
+#titolo{width:100%;padding:18px 24px;border:none;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+#results{background:#fff;border-radius:18px;overflow:hidden}
+.result{padding:12px;cursor:pointer}.result:hover{background:#ece6da}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+input,select,textarea,button{width:100%;padding:14px;border-radius:14px;border:1px solid var(--border);font-family:inherit}
+button{background:var(--olive);color:#fff;border:none;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat{background:#ece6da;padding:15px;border-radius:16px;text-align:center}
+.movie{display:grid;grid-template-columns:120px 1fr;gap:18px;padding:18px 0;border-bottom:1px solid var(--border)}
+.poster{width:120px;border-radius:12px}.tag{display:inline-block;background:#d9d0c5;padding:5px 10px;border-radius:20px;margin:3px}
+.empty{text-align:center;padding:60px 20px;color:#6d665d}
+
+details.entry-menu{float:right;position:relative}
+details.entry-menu summary{list-style:none;cursor:pointer;font-size:24px;padding:0 8px}
+details.entry-menu summary::-webkit-details-marker{display:none}
+.menu-box{position:absolute;right:0;background:white;border:1px solid #ddd4c7;border-radius:12px;min-width:170px;box-shadow:0 8px 20px rgba(0,0,0,.08);overflow:hidden;z-index:20}
+.menu-box div{padding:10px 14px;cursor:pointer}
+.menu-box div:hover{background:#f4f0e8}
+
+
+
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000}
+.modal-content{background:#fbf8f2;max-width:700px;width:90%;margin:5vh auto;padding:28px;border-radius:24px}
+.modal textarea,.modal input{width:100%;margin-bottom:12px}
+
+.footer{
+text-align:center;
+margin-top:60px;
+padding:40px 0 20px;
+color:#8a8377;
+font-size:0.9rem;
+border-top:1px solid var(--border);
+}
+
+@media(max-width:900px){body{display:block}.sidebar{position:relative;width:100%;min-height:auto}.main{margin:0}}
+</style></head><body>
+<div class="sidebar">
+<h2>My Cinema Journal</h2>
+<p><em>Some films become places we return to.</em></p>
+<div class="menu">
+<a href="#library">📖 Library</a>
+<a href="#" onclick="document.getElementById('favFiltro').value='1';render()">❤️ Favorites</a>
+<a href="#statistics">📊 Statistics</a>
+</div>
+<div style="margin-top:30px"><h3>This month</h3>
+<p>Films watched: <b id="monthCount">0</b></p>
+<p>Average rating: <b id="monthAvg">0</b></p></div>
+<p style="margin-top:40px;font-style:italic"></p>
+</div>
+
+<div class="main">
+<div class="hero"><h1>My Cinema Journal</h1><p>A personal archive of the films that inspired me.</p></div>
+
+<div class="card">
+<div class="search-wrapper"><input id="titolo" placeholder="Search for a film..."><div id="results"></div></div>
+<div id="preview"></div>
+<div class="grid">
+<input id="voto" type="number" min="1" max="10" placeholder="Rating /10">
+<input id="data" type="date">
+<input id="compagnia" placeholder="Who did you go with?">
+<input id="mood" placeholder="Mood tags (comma separated)">
+</div><br>
+<textarea id="recensione" placeholder="Write your review..." style="min-height:140px"></textarea><br><br>
+<button onclick="salvaFilm()">Save film</button>
+</div>
+
+<div class="card" id="statistics"><h2>Filters</h2>
+<div class="grid">
+<select id="moodFiltro" onchange="render()"><option value="">All moods</option></select>
+<select id="paeseFiltro" onchange="render()"><option value="">All countries</option></select>
+<select id="favFiltro" onchange="render()"><option value="0">All films</option><option value="1">Favorites ❤️</option></select>
+</div></div>
+
+<div class="card"><div class="stats">
+<div class="stat">Films<br><b id="tot">0</b></div>
+<div class="stat">Average<br><b id="media">0</b></div>
+<div class="stat">Favorites<br><b id="pref">0</b></div>
+<div class="stat">Top country<br><b id="topPaese">-</b></div>
+</div></div>
+
+<div class="card" id="library"><h2>Diary Entries</h2><div id="lista"></div></div>
+
+<footer class="footer">
+Curated by Sara Lini, Milan
+</footer>
+</div>
+
+<script>
+const API='68a83e11cb4fc9e68403bfc61532822b';
+let db=JSON.parse(localStorage.getItem('mcj_finale')||'[]'), selected=null;
+recensione.value=localStorage.getItem('mcj_draft')||'';
+recensione.oninput=()=>localStorage.setItem('mcj_draft',recensione.value);
+let t; titolo.oninput=()=>{clearTimeout(t);t=setTimeout(cerca,400);}
+async function cerca(){
+ let q=titolo.value.trim(); if(q.length<2){results.innerHTML='';return;}
+ let r=await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API}&language=it-IT&query=${encodeURIComponent(q)}`);
+ let d=await r.json();
+ results.innerHTML=(d.results||[]).slice(0,6).map(m=>`<div class='result' onclick='scegli(${m.id})'>${m.title} (${(m.release_date||'').slice(0,4)})</div>`).join('');
+}
+async function scegli(id){
+ let r=await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API}&language=it-IT&append_to_response=credits`);
+ selected=await r.json(); titolo.value=selected.title; results.innerHTML='';
+ preview.innerHTML=`<div class='movie'><img class='poster' src='https://image.tmdb.org/t/p/w342${selected.poster_path}'><div><h3>${selected.title}</h3><p>${selected.genres.map(g=>g.name).join(', ')}</p><p>${selected.production_countries.map(c=>c.name).join(', ')}</p></div></div>`;
+}
+function salvaFilm(){
+ if(!selected){alert('Select a film from the suggestions');return;}
+ db.unshift({tmdb:selected,voto:voto.value,data:data.value,compagnia:compagnia.value,mood:mood.value.split(',').map(x=>x.trim()).filter(Boolean),recensione:recensione.value,preferito:false});
+ localStorage.setItem('mcj_finale',JSON.stringify(db)); db=JSON.parse(localStorage.getItem('mcj_finale')||'[]'); localStorage.removeItem('mcj_draft'); alert('Film saved successfully!');
+ titolo.value=voto.value=data.value=compagnia.value=mood.value=recensione.value=''; preview.innerHTML=''; selected=null; aggiornaMood(); render();
+}
+function aggiornaMood(){
+ let m=[...new Set(db.flatMap(f=>f.mood))].sort();
+ moodFiltro.innerHTML="<option value=''>All moods</option>"+m.map(x=>`<option>${x}</option>`).join('');
+ let paesi=[...new Set(db.flatMap(f=>f.tmdb.production_countries.map(c=>c.name)))].sort();
+ paeseFiltro.innerHTML="<option value=''>All countries</option>"+paesi.map(x=>`<option>${x}</option>`).join('');
+}
+
+
+let currentEditIndex=null;
+function editFilm(i){
+ currentEditIndex=i;
+ let f=db[i];
+ document.getElementById('editReview').value=f.recensione||'';
+ document.getElementById('editRating').value=f.voto||'';
+ document.getElementById('editCompagnia').value=f.compagnia||'';
+ document.getElementById('editMood').value=(f.mood||[]).join(', ');
+ document.getElementById('editModal').style.display='block';
+}
+function closeEditModal(){document.getElementById('editModal').style.display='none';}
+function saveEdit(){
+ let f=db[currentEditIndex];
+ f.recensione=document.getElementById('editReview').value;
+ f.voto=document.getElementById('editRating').value;
+ f.compagnia=document.getElementById('editCompagnia').value;
+ f.mood=document.getElementById('editMood').value.split(',').map(x=>x.trim()).filter(Boolean);
+ closeEditModal();
+ save();
+}
+
+
+function fav(i){db[i].preferito=!db[i].preferito;save()} function delFilm(i){db.splice(i,1);save()}
+function save(){localStorage.setItem('mcj_finale',JSON.stringify(db)); aggiornaMood(); render()}
+function render(){
+ let mf=moodFiltro.value,p=paeseFiltro.value.toLowerCase(),fo=favFiltro.value==='1';
+ let vis=db.filter(f=>(!mf||f.mood.includes(mf))&&(!p||f.tmdb.production_countries.map(c=>c.name).join(',').toLowerCase().includes(p))&&(!fo||f.preferito));
+ if(!vis.length){lista.innerHTML="<div class='empty'><h3>No diary entries yet.</h3><p>Start by adding the first film that inspired you.</p></div>";}
+ else{lista.innerHTML=''; vis.forEach((f,i)=>{let m=f.tmdb; lista.innerHTML+=`<div class='movie'><img class='poster' src='https://image.tmdb.org/t/p/w342${m.poster_path}'><div><div style='font-size:28px;cursor:pointer' onclick='fav(${i})'>${f.preferito?'❤️':'🤍'}</div><h2>${m.title}</h2><p>${m.genres.map(g=>g.name).join(', ')} • ${m.production_countries.map(c=>c.name).join(', ')}</p><p><b>Date watched:</b> ${f.data ? new Date(f.data).toLocaleDateString('en-GB') : '—'}</p><p><b>Seen with:</b> ${f.compagnia||'—'}</p><p><b>Rating:</b> ${f.voto}/10</p>${f.mood.map(x=>`<span class='tag'>${x}</span>`).join('')}<p>${f.recensione}</p><details class='entry-menu'>
+<summary>⋯</summary>
+<div class='menu-box'>
+<div onclick='editFilm(${i})'>✏️ Edit Entry</div>
+<div onclick='delFilm(${i})'>🗑 Delete Entry</div>
+</div>
+</details></div></div>`})}
+ tot.textContent=db.length; media.textContent=db.length?(db.reduce((a,b)=>a+Number(b.voto||0),0)/db.length).toFixed(1):0;
+ pref.textContent=db.filter(f=>f.preferito).length; monthCount.textContent=db.length; monthAvg.textContent=media.textContent;
+ let c={}; db.forEach(f=>f.tmdb.production_countries.forEach(p=>c[p.name]=(c[p.name]||0)+1)); topPaese.textContent=Object.keys(c).sort((a,b)=>c[b]-c[a])[0]||'-';
+}
+aggiornaMood(); render();
+</script>
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <h2>Edit Entry</h2>
+    <input id="editRating" placeholder="Rating /10">
+    <input id="editCompagnia" placeholder="Who did you go with?">
+    <input id="editMood" placeholder="Mood tags">
+    <textarea id="editReview" style="min-height:260px"></textarea>
+    <button onclick="saveEdit()">Save Changes</button>
+    <button onclick="closeEditModal()">Cancel</button>
+  </div>
+</div>
+</body></html>
