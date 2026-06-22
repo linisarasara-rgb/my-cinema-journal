@@ -110,13 +110,28 @@ const API='68a83e11cb4fc9e68403bfc61532822b';
 let db=[] , selected=null;
 async function loadCloud(){
  const {data,error}=await supabase.from('films').select('*').order('created_at',{ascending:false});
+async function loadCloud(){
+ const { data, error } = await supabase
+   .from('films')
+   .select('*')
+   .order('created_at', { ascending:false });
+
  if(!error && data){
-  db=data.map(r=>({...r, tmdb: JSON.parse(r.tmdb_data||'{}')}));
-  loadCloud();
+   db = data.map(r => ({
+     ...r,
+     tmdb: JSON.parse(r.tmdb_data || '{}'),
+     voto: r.rating,
+     data: r.watch_date,
+     compagnia: r.companion,
+     mood: r.moods || [],
+     recensione: r.review,
+     preferito: r.favorite
+   }));
+
+   aggiornaMood();
+   render();
  }
 }
-
-recensione.value=localStorage.getItem('mcj_draft')||'';
 recensione.oninput=()=>localStorage.setItem('mcj_draft',recensione.value);
 let t; titolo.oninput=()=>{clearTimeout(t);t=setTimeout(cerca,400);}
 async function cerca(){
