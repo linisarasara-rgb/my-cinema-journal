@@ -204,8 +204,7 @@ function render(){
 <div onclick='delFilm(${i})'>🗑 Delete Entry</div>
 </div>
 </details></div></div>`})}
- tot.textContent=db.length; media.textContent=db.length?(db.reduce((a,b)=>a+Number(b.voto||0),0)/db.length).toFixed(1):0;
- pref.textContent=db.filter(f=>f.preferito).length; monthCount.textContent=db.length; monthAvg.textContent=media.textContent;
+loadCloud();
  let c={}; db.forEach(f=>f.tmdb.production_countries.forEach(p=>c[p.name]=(c[p.name]||0)+1)); topPaese.textContent=Object.keys(c).sort((a,b)=>c[b]-c[a])[0]||'-';
 }
 aggiornaMood(); render();
