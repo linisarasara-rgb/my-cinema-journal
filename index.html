@@ -279,21 +279,22 @@ function render(){
    });
  }
 
- let c={};
+let c={};
 
- db.forEach(f=>
-   f.tmdb.production_countries.forEach(p=>
-     c[p.name]=(c[p.name]||0)+1
-   )
- );
+db.forEach(f =>
+  f.tmdb.production_countries.forEach(p =>
+    c[p.name] = (c[p.name] || 0) + 1
+  )
+);
 
- topPaese.textContent=
-   Object.keys(c).sort((a,b)=>c[b]-c[a])[0]||'-';
+topPaese.textContent =
+  Object.keys(c).sort((a,b)=>c[b]-c[a])[0] || '-';
 }
 
+aggiornaMood();
+render();
 loadCloud();
 </script>
-
 <div id="editModal" class="modal">
   <div class="modal-content">
     <h2>Edit Entry</h2>
