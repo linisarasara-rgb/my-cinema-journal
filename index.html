@@ -1,1 +1,228 @@
-<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>My Cinema Journal</title><script src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'></script><style>body{font-family:Georgia,serif;background:#f4f0e8;padding:40px}.card{max-width:900px;margin:auto;background:#fff;padding:30px;border-radius:20px}input,textarea,button{width:100%;padding:14px;margin:8px 0}button{background:#6b6a4d;color:#fff;border:none}.movie{border-top:1px solid #ddd;padding:10px 0}</style></head><body><div class='card'><h1>My Cinema Journal</h1><input id='titolo' placeholder='Search for a film...'><div id='results'></div><input id='voto' type='number' placeholder='Rating /10'><input id='data' type='date'><input id='compagnia' placeholder='Who did you go with?'><input id='mood' placeholder='Mood tags'><textarea id='recensione'></textarea><button onclick='salvaFilm()'>Save film</button><div id='lista'></div></div><script>const API='68a83e11cb4fc9e68403bfc61532822b';const supabaseClient=window.supabase.createClient('https://wqzhizfersqguhlndpvn.supabase.co','sb_publishable_z6o7aomJGo5iiNjnq6a-7g_0Q0qQd9k');let selected=null;let db=[];titolo.oninput=async()=>{let q=titolo.value.trim();if(q.length<2){results.innerHTML='';return;}let r=await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API}&query=${encodeURIComponent(q)}`);let d=await r.json();results.innerHTML=(d.results||[]).slice(0,5).map(m=>`<div onclick="scegli(${m.id})">${m.title}</div>`).join('');};async function scegli(id){let r=await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API}`);selected=await r.json();titolo.value=selected.title;results.innerHTML='';}async function salvaFilm(){if(!selected){alert('Select a film');return;}const {error}=await supabaseClient.from('films').insert({title:selected.title,rating:Number(voto.value)||null,watch_date:data.value||null,companion:compagnia.value,moods:mood.value.split(',').map(x=>x.trim()).filter(Boolean),review:recensione.value,favorite:false,tmdb_data:JSON.stringify(selected)});if(error){alert(error.message);return;}loadCloud();}async function loadCloud(){const {data,error}=await supabaseClient.from('films').select('*').order('created_at',{ascending:false});if(error)return;lista.innerHTML=(data||[]).map(f=>`<div class='movie'><h3>${f.title}</h3><p>${f.review||''}</p></div>`).join('');}loadCloud();</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Cinema Journal</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+    font-family:Georgia,serif;
+    background:#f4f0e8;
+    padding:40px;
+}
+
+.card{
+    max-width:900px;
+    margin:auto;
+    background:#fff;
+    padding:30px;
+    border-radius:20px;
+}
+
+input,textarea,button{
+    width:100%;
+    padding:14px;
+    margin:8px 0;
+    border:1px solid #ddd;
+    border-radius:10px;
+}
+
+button{
+    background:#6b6a4d;
+    color:#fff;
+    border:none;
+    cursor:pointer;
+}
+
+button:hover{
+    opacity:.9;
+}
+
+#results{
+    background:white;
+    border:1px solid #ddd;
+    border-radius:10px;
+}
+
+.result{
+    padding:10px;
+    cursor:pointer;
+}
+
+.result:hover{
+    background:#eee;
+}
+
+.movie{
+    border-top:1px solid #ddd;
+    padding:20px 0;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h1>My Cinema Journal</h1>
+
+<input id="titolo" placeholder="Search for a film...">
+
+<div id="results"></div>
+
+<input id="voto" type="number" placeholder="Rating /10">
+
+<input id="data" type="date">
+
+<input id="compagnia" placeholder="Who did you go with?">
+
+<input id="mood" placeholder="Mood tags separated by commas">
+
+<textarea id="recensione" placeholder="Write your review"></textarea>
+
+<button onclick="salvaFilm()">Save film</button>
+
+<div id="lista"></div>
+
+</div>
+
+<script>
+
+const API='68a83e11cb4fc9e68403bfc61532822b';
+
+const supabaseClient =
+window.supabase.createClient(
+'https://wqzhizfersqguhlndpvn.supabase.co',
+'sb_publishable_z6o7aomJGo5iiNjnq6a-7g_0Q0qQd9k'
+);
+
+let selected=null;
+
+titolo.oninput = async () => {
+
+    let q = titolo.value.trim();
+
+    if(q.length < 2){
+        results.innerHTML='';
+        return;
+    }
+
+    let r = await fetch(
+        `https://api.themoviedb.org/3/search/movie?api_key=${API}&query=${encodeURIComponent(q)}`
+    );
+
+    let d = await r.json();
+
+    results.innerHTML =
+        (d.results || [])
+        .slice(0,5)
+        .map(m=>`
+            <div class="result" onclick="scegli(${m.id})">
+                ${m.title}
+            </div>
+        `)
+        .join('');
+};
+
+async function scegli(id){
+
+    let r = await fetch(
+        `https://api.themoviedb.org/3/movie/${id}?api_key=${API}`
+    );
+
+    selected = await r.json();
+
+    titolo.value = selected.title;
+
+    results.innerHTML='';
+}
+
+async function salvaFilm(){
+
+    if(!selected){
+        alert('Select a film first');
+        return;
+    }
+
+    const {error} = await supabaseClient
+    .from('films')
+    .insert({
+
+        title:selected.title,
+
+        rating:Number(voto.value) || null,
+
+        watch_date:data.value || null,
+
+        companion:compagnia.value,
+
+        moods:mood.value
+            .split(',')
+            .map(x=>x.trim())
+            .filter(Boolean),
+
+        review:recensione.value,
+
+        favorite:false,
+
+        tmdb_data:selected
+    });
+
+    if(error){
+        alert(error.message);
+        return;
+    }
+
+    titolo.value='';
+    voto.value='';
+    data.value='';
+    compagnia.value='';
+    mood.value='';
+    recensione.value='';
+
+    selected = null;
+
+    loadCloud();
+}
+
+async function loadCloud(){
+
+    const {data,error} =
+    await supabaseClient
+    .from('films')
+    .select('*')
+    .order('created_at',{ascending:false});
+
+    if(error){
+        console.log(error);
+        return;
+    }
+
+    lista.innerHTML = (data || []).map(f=>`
+
+        <div class="movie">
+
+            <h3>${f.title}</h3>
+
+            <p><b>Rating:</b> ${f.rating || '-'}</p>
+
+            <p><b>Date:</b> ${f.watch_date || '-'}</p>
+
+            <p><b>With:</b> ${f.companion || '-'}</p>
+
+            <p>${f.review || ''}</p>
+
+        </div>
+
+    `).join('');
+}
+
+loadCloud();
+
+</script>
+
+</body>
+</html>
